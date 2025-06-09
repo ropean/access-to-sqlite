@@ -1,0 +1,12 @@
+# database files
+*.accdb
+*.db
+*.sqlite
+
+# logs
+*.log
+
+# system files
+.DS_Store
+__pycache__/
+.vscode/
