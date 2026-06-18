@@ -31,14 +31,14 @@ each request. With Docker, `/tmp` is mounted as `tmpfs` (RAM) — nothing persis
 docker compose up -d --build
 ```
 
-Then open `http://<host>:3000`.
+Then open `http://<host>:5014`.
 
 ### Configuration
 
 | Env var      | Default        | Description                         |
 | ------------ | -------------- | ----------------------------------- |
-| `PORT`       | `3000`         | Listen port                         |
-| `MAX_UPLOAD` | `268435456`    | Max upload size in bytes (256 MB)   |
+| `PORT`       | `5014`         | Listen port                         |
+| `MAX_UPLOAD` | `20971520`     | Max upload size in bytes (20 MB)    |
 
 ## Run locally (dev)
 
@@ -54,12 +54,12 @@ pnpm install
 pnpm start            # or: pnpm dev  (auto-reload)
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:5014`.
 
 ## API
 
 ```bash
-curl -F "file=@database.mdb" http://localhost:3000/api/convert -o output.sqlite
+curl -F "file=@database.mdb" http://localhost:5014/api/convert -o output.sqlite
 ```
 
 Response is the SQLite file; `X-Table-Count` header reports the number of tables converted.

@@ -5,11 +5,11 @@ services:
     container_name: access-to-sqlite
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "5014:5014"
     environment:
-      PORT: 3000
-      # Max upload size in bytes (default 256 MB).
-      MAX_UPLOAD: 268435456
+      PORT: 5014
+      # Max upload size in bytes (default 20 MB).
+      MAX_UPLOAD: 20971520
     tmpfs:
       # Keep uploaded files + intermediate SQLite in RAM; nothing persists.
       - /tmp

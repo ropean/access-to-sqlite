@@ -8,9 +8,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT || 3000;
-// Upload size limit (bytes). Default 256 MB.
-const MAX_UPLOAD = Number(process.env.MAX_UPLOAD || 256 * 1024 * 1024);
+const PORT = process.env.PORT || 5014;
+// Upload size limit (bytes). Default 20 MB.
+const MAX_UPLOAD = Number(process.env.MAX_UPLOAD || 20 * 1024 * 1024);
 
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
