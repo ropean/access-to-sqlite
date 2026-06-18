@@ -1,0 +1,81 @@
+name: Deploy via SSH (Docker)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - release
+      - release*
+
+permissions:
+  contents: read
+  packages: write
+  deployments: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ropean/access-to-sqlite
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: VPS
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Copy docker-compose.yml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "docker-compose.yml"
+          target: ${{ secrets.SSH_DEPLOY_PATH }}
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ropean --password-stdin
+            cd ${{ secrets.SSH_DEPLOY_PATH }}
+            docker compose pull access-to-sqlite
+            docker compose up -d --remove-orphans
+
+      - name: Deployment Summary
+        if: always()
+        shell: bash
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## Deployment Completed
+
+          | Item | Details |
+          |------|---------|
+          | **Image** | ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest |
+          | **Commit** | ${{ github.sha }} |
+          | **Server** | ${{ secrets.SSH_HOST }} |
+          | **Deploy Path** | ${{ secrets.SSH_DEPLOY_PATH }} |
+          | **Deploy Time** | $(date -u +'%Y-%m-%d %H:%M:%S UTC') |
+          EOF

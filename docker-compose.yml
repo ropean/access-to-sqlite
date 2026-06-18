@@ -1,7 +1,7 @@
 services:
   access-to-sqlite:
     build: .
-    image: access-to-sqlite:latest
+    image: ghcr.io/ropean/access-to-sqlite:latest
     container_name: access-to-sqlite
     restart: unless-stopped
     ports:
