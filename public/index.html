@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Access → SQLite</title>
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --black: #000000;
+        --near-white: #f0f0f0;
+        --silver: #a1a4a5;
+        --frost: rgba(214, 235, 253, 0.19);
+        --frost-soft: rgba(217, 237, 254, 0.145);
+        --ring: rgba(176, 199, 217, 0.145);
+        --orange: #ff801f;
+        --green: #11ff99;
+        --blue: #3b9eff;
+        --red: #ff2047;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--black);
+        color: var(--near-white);
+        font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px;
+      }
+
+      header {
+        width: 100%;
+        max-width: 720px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0 32px;
+      }
+
+      .wordmark {
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.35px;
+      }
+
+      .wordmark span {
+        color: var(--silver);
+        font-weight: 400;
+      }
+
+      .badge {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--green);
+        background: rgba(17, 255, 153, 0.12);
+        border-radius: 9999px;
+        padding: 4px 12px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      main {
+        width: 100%;
+        max-width: 720px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 40px;
+        padding-bottom: 60px;
+      }
+
+      .hero {
+        text-align: center;
+      }
+
+      .hero h1 {
+        font-size: 56px;
+        font-weight: 600;
+        line-height: 1.05;
+        letter-spacing: -2px;
+      }
+
+      .hero h1 .arrow {
+        color: var(--orange);
+      }
+
+      .hero p {
+        margin-top: 16px;
+        color: var(--silver);
+        font-size: 18px;
+      }
+
+      /* Drop zone */
+      .drop {
+        border: 1px dashed var(--frost);
+        border-radius: 24px;
+        padding: 56px 32px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.18s, background 0.18s;
+        box-shadow: var(--ring) 0px 0px 0px 1px;
+      }
+
+      .drop:hover,
+      .drop.drag {
+        border-color: var(--blue);
+        background: rgba(59, 158, 255, 0.06);
+      }
+
+      .drop .icon {
+        font-size: 40px;
+        margin-bottom: 16px;
+        opacity: 0.8;
+      }
+
+      .drop .title {
+        font-size: 18px;
+        font-weight: 500;
+      }
+
+      .drop .hint {
+        margin-top: 8px;
+        color: var(--silver);
+        font-size: 14px;
+      }
+
+      .drop .formats {
+        margin-top: 14px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--silver);
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      /* File row */
+      .file-row {
+        display: none;
+        align-items: center;
+        gap: 14px;
+        border: 1px solid var(--frost);
+        border-radius: 16px;
+        padding: 16px 20px;
+      }
+
+      .file-row.show {
+        display: flex;
+      }
+
+      .file-row .fname {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 14px;
+      }
+
+      .file-row .fsize {
+        color: var(--silver);
+        font-size: 13px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      /* Buttons */
+      .actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      button {
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 9999px;
+        padding: 10px 24px;
+        transition: background 0.18s, opacity 0.18s;
+      }
+
+      .btn-primary {
+        background: #ffffff;
+        color: #000000;
+        border: none;
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--near-white);
+        border: 1px solid var(--frost);
+      }
+
+      .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      /* Status */
+      .status {
+        min-height: 24px;
+        text-align: center;
+        font-size: 14px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      .status.err {
+        color: var(--red);
+      }
+
+      .status.ok {
+        color: var(--green);
+      }
+
+      .status.work {
+        color: var(--blue);
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 13px;
+        height: 13px;
+        border: 2px solid var(--frost);
+        border-top-color: var(--blue);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        vertical-align: -2px;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      footer {
+        color: var(--silver);
+        font-size: 12px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        padding-top: 24px;
+        text-align: center;
+      }
+
+      @media (max-width: 600px) {
+        .hero h1 {
+          font-size: 38px;
+          letter-spacing: -1.2px;
+        }
+        .drop {
+          padding: 40px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wordmark">access<span>-to-</span>sqlite</div>
+      <div class="badge">mdbtools</div>
+    </header>
+
+    <main>
+      <div class="hero">
+        <h1>Access <span class="arrow">→</span> SQLite</h1>
+        <p>Drop a Microsoft Access database. Get a SQLite file back.</p>
+      </div>
+
+      <div id="drop" class="drop">
+        <div class="icon">📂</div>
+        <div class="title">Drag &amp; drop your database here</div>
+        <div class="hint">or click to browse</div>
+        <div class="formats">.mdb · .accdb</div>
+        <input id="file" type="file" accept=".mdb,.accdb" />
+      </div>
+
+      <div id="fileRow" class="file-row">
+        <span class="fname" id="fname"></span>
+        <span class="fsize" id="fsize"></span>
+      </div>
+
+      <div class="actions">
+        <button id="convert" class="btn-primary" disabled>Convert</button>
+        <button id="reset" class="btn-ghost">Clear</button>
+      </div>
+
+      <div id="status" class="status"></div>
+    </main>
+
+    <footer>runs entirely on your server · no data leaves the container</footer>
+
+    <script>
+      const dropEl = document.getElementById("drop");
+      const fileEl = document.getElementById("file");
+      const fileRow = document.getElementById("fileRow");
+      const fnameEl = document.getElementById("fname");
+      const fsizeEl = document.getElementById("fsize");
+      const convertBtn = document.getElementById("convert");
+      const resetBtn = document.getElementById("reset");
+      const statusEl = document.getElementById("status");
+
+      let selected = null;
+
+      function fmtSize(bytes) {
+        const u = ["B", "KB", "MB", "GB"];
+        let i = 0;
+        let n = bytes;
+        while (n >= 1024 && i < u.length - 1) {
+          n /= 1024;
+          i++;
+        }
+        return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${u[i]}`;
+      }
+
+      function setStatus(msg, cls = "") {
+        statusEl.className = "status " + cls;
+        statusEl.innerHTML = msg;
+      }
+
+      function pickFile(file) {
+        if (!file) return;
+        if (!/\.(mdb|accdb)$/i.test(file.name)) {
+          setStatus("✕ Only .mdb or .accdb files are supported.", "err");
+          return;
+        }
+        selected = file;
+        fnameEl.textContent = file.name;
+        fsizeEl.textContent = fmtSize(file.size);
+        fileRow.classList.add("show");
+        convertBtn.disabled = false;
+        setStatus("");
+      }
+
+      dropEl.addEventListener("click", () => fileEl.click());
+      fileEl.addEventListener("change", (e) => pickFile(e.target.files[0]));
+
+      ["dragenter", "dragover"].forEach((ev) =>
+        dropEl.addEventListener(ev, (e) => {
+          e.preventDefault();
+          dropEl.classList.add("drag");
+        })
+      );
+      ["dragleave", "drop"].forEach((ev) =>
+        dropEl.addEventListener(ev, (e) => {
+          e.preventDefault();
+          dropEl.classList.remove("drag");
+        })
+      );
+      dropEl.addEventListener("drop", (e) =>
+        pickFile(e.dataTransfer.files[0])
+      );
+
+      resetBtn.addEventListener("click", () => {
+        selected = null;
+        fileEl.value = "";
+        fileRow.classList.remove("show");
+        convertBtn.disabled = true;
+        setStatus("");
+      });
+
+      convertBtn.addEventListener("click", async () => {
+        if (!selected) return;
+        convertBtn.disabled = true;
+        resetBtn.disabled = true;
+        setStatus('<span class="spinner"></span>Converting…', "work");
+
+        const fd = new FormData();
+        fd.append("file", selected);
+
+        try {
+          const res = await fetch("/api/convert", {
+            method: "POST",
+            body: fd,
+          });
+
+          if (!res.ok) {
+            let msg = `Error ${res.status}`;
+            try {
+              const j = await res.json();
+              if (j.error) msg = j.error;
+            } catch (_) {}
+            setStatus("✕ " + msg, "err");
+            convertBtn.disabled = false;
+            resetBtn.disabled = false;
+            return;
+          }
+
+          const tables = res.headers.get("X-Table-Count");
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = selected.name.replace(/\.(mdb|accdb)$/i, "") + ".sqlite";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+
+          setStatus(
+            `✓ Done — ${tables} table${tables === "1" ? "" : "s"} converted. Download started.`,
+            "ok"
+          );
+        } catch (e) {
+          setStatus("✕ " + e.message, "err");
+        } finally {
+          convertBtn.disabled = false;
+          resetBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
