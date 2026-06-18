@@ -1,0 +1,17 @@
+{
+  "name": "access-to-sqlite",
+  "version": "2.0.0",
+  "description": "Web tool to convert Microsoft Access (.mdb/.accdb) databases to SQLite, powered by mdbtools.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
