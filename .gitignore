@@ -6,7 +6,9 @@
 # logs
 *.log
 
+# node
+node_modules/
+
 # system files
 .DS_Store
-__pycache__/
 .vscode/

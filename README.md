@@ -1,47 +1,71 @@
-# Access to SQLite Converter
+# Access → SQLite (Web)
 
-This tool converts Microsoft Access `.accdb` to a SQLite `.db`, exporting **all tables** and logging the conversion process.
+Convert Microsoft Access (`.mdb` / `.accdb`) databases to SQLite from your browser.
+Upload (or drag & drop) a database, get a `.sqlite` file back.
 
-## 📦 Features
+No Windows, no Microsoft Access Database Engine — conversion is powered by
+[**mdbtools**](https://github.com/mdbtools/mdbtools), so it runs anywhere,
+including Linux containers.
 
-- Converts all tables in a `.accdb` file to a single `.sqlite` database
-- Uses `pyodbc` to read from Access and `pandas` to write to SQLite
-- Logs each step of the process with timestamps
-- Works on **Windows only** (requires Access Database Engine)
+## Stack
 
----
+- **Node.js + Express** — HTTP server and file upload
+- **mdbtools** (`mdb-schema`, `mdb-tables`, `mdb-export`) — reads Access files
+- **sqlite3** CLI — writes the output database
+- **Docker** — single-container deployment
 
-## 🚀 Requirements
+## How it works
 
-- **Windows OS**
-- Python 3.7+
-- [Microsoft Access Database Engine](https://www.microsoft.com/en-us/download/details.aspx?id=54920)
+1. Browser uploads the Access file to `POST /api/convert`.
+2. Server lists tables with `mdb-tables`, builds the schema with
+   `mdb-schema … sqlite`, then streams each table's rows via
+   `mdb-export -I sqlite … | sqlite3 output.sqlite`.
+3. The resulting `.sqlite` file streams back as a download.
 
----
+Uploaded files and intermediate output live in a temp dir that is deleted after
+each request. With Docker, `/tmp` is mounted as `tmpfs` (RAM) — nothing persists.
 
-## 🛠️ How to Use
-
-Clone the repo and install dependencies:
+## Run with Docker (recommended)
 
 ```bash
-git clone https://github.com/bofethe/access-to-sqlite.git
-cd access-to-sqlite
+docker compose up -d --build
 ```
 
-### CLI Mode
+Then open `http://<host>:3000`.
 
-Open a terminal with an activated python environment containing the libraries listed in [requirements](requirements.txt). If you need to install these, run the following:
+### Configuration
+
+| Env var      | Default        | Description                         |
+| ------------ | -------------- | ----------------------------------- |
+| `PORT`       | `3000`         | Listen port                         |
+| `MAX_UPLOAD` | `268435456`    | Max upload size in bytes (256 MB)   |
+
+## Run locally (dev)
+
+Requires `mdbtools` and `sqlite3` on `PATH`:
+
 ```bash
-pip install -r requirements.txt
+# macOS
+brew install mdbtools sqlite3
+# Debian/Ubuntu
+sudo apt-get install mdbtools sqlite3
+
+pnpm install
+pnpm start            # or: pnpm dev  (auto-reload)
 ```
 
-Run the following line with the relative or absolute paths to you Access database and the desired output for the SQLite database.
+Open `http://localhost:3000`.
+
+## API
+
 ```bash
-python main.py INPUT.accdb OUTPUT.sqlite
+curl -F "file=@database.mdb" http://localhost:3000/api/convert -o output.sqlite
 ```
 
-### IDE Mode
-Update the lines 11 and 12 in [main](main.py) with the relative or absolute paths to you Access database and the desired output for the SQLite database. For clarification, both lines are maked with #NOTE. Run the script.
+Response is the SQLite file; `X-Table-Count` header reports the number of tables converted.
 
-### Logging
-A detailed event log is saved in the root folder in [conversion](conversion.log).
+## Notes
+
+- Supports both legacy `.mdb` (JET) and modern `.accdb` files.
+- Table data, primary keys, and UTF-8 text (incl. CJK) are preserved.
+- mdbtools is read-only on the Access side — your source file is never modified.
